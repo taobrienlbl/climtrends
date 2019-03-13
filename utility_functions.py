@@ -97,7 +97,14 @@ def poisson_ppf_fast(F, mu):
         retval = vals1
     return retval
 
+@numba.vectorize([numba.float64(numba.float64, numba.float64)])
+def log_exponential_pdf_fast(x,mu):
+    """ Define a fast version of the log exponential. """
+    return np.log(mu) - mu*x
 
-
+@numba.vectorize([numba.float64(numba.float64, numba.float64)])
+def exponential_ppf_fast(F,mu):
+    """ Define a fast version of the exponential percentile function. """
+    return -np.log(1 - F/100)/mu
 
 
