@@ -30,11 +30,11 @@ class TrendPoissonModel(ClimTrendModel):
     
     def log_likelihood(self, theta):
         
-        cmu, mu0, var = theta
+        cmu, mu0 = theta
         
         mu = cmu*self.x + mu0
         
-        return np.sum(log_poisson_pdf_fast(self.y, mu, var))
+        return np.sum(log_poisson_pdf_fast(self.y, mu))
     
     def get_percentile_of_mean_at_time(self, dates, percentile):
         
@@ -84,7 +84,7 @@ class TrendPoissonModel(ClimTrendModel):
             mu  = parameter_samples[0][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1][:,np.newaxis]
             mu  = mu*np.ones([len(parameter_samples[0,:]),len(dates)])
             
-            model_values = poisson_ppf_fast(model_percentile, mu, var)
+            model_values = poisson_ppf_fast(model_percentile, mu)
             
             # get the percentile of that value
             values = np.percentile(model_values, percentile, axis = 0)
@@ -101,17 +101,16 @@ class TrendPoissonModel(ClimTrendModel):
                          theta,
                          dates):
         # get the parameters
-        cmu, mu0, var = theta
+        cmu, mu0 = theta
         
         # convert the dates to the internal years-since format
         times = self.dates_to_xvalues(dates)
         
-        # vectorize the mean and variance
+        # vectorize the mean
         mu  = cmu*times + mu0
-        var = var*np.ones(np.shape(dates))
         
         # generate the samples
-        samples = np.reshape(np.array( [ scipy.stats.poisson.rvs(mu = mu) for m in mu ] ), 
+        samples = np.reshape(np.array( [ scipy.stats.poisson.rvs(mu = m) for m in mu ] ), 
                              np.shape(dates))
         
         return samples

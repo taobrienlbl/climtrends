@@ -1,0 +1,9 @@
+
+Write the following:
+    * TrendExponentialModel.py
+    * TrendGammaModel.py
+    * TrendGEVModel.py
+
+Also, implement a get_slopes() method in all.
+
+

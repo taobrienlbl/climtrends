@@ -2,6 +2,7 @@
 import numba
 import numpy as np
 import numba.extending
+import scipy.special
 import ctypes
 
 # make a numba-ready version of erfinv()
@@ -60,17 +61,27 @@ def normal_ppf_fast(F, mu, var):
     
     return quantile
     
-@numba.vectorize([numba.float64(numba.float64, numba.float64)])
+@numba.vectorize([numba.int64(numba.int64)],)
+def fast_factorial(n):
+    if n == 0:
+        return 0
+    
+    retval = 1
+    for n in range(2, n+1):
+        retval *= n
+        
+    return retval
+@numba.vectorize([numba.float64(numba.int64, numba.float64)])
 def log_poisson_pdf_fast(N,mu):
     """ Define a fast version of the log poisson. """
-    return -mu + N*np.log(mu) -np.log(scipy.special.factorial(N, exact=False))
+    return -mu + N*np.log(mu) -np.log(fast_factorial(N))
 
 
 # A helper function for quickly calculating the PPF of a poisson distribution
 addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "pdtrik")
 functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 pdtrik_fn = functype(addr)
-addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "pdtr")
+addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "__pyx_fuse_0pdtr")
 functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 pdtr_fn = functype(addr)
 @numba.vectorize([numba.float64(numba.float64, numba.float64)])
@@ -80,7 +91,11 @@ def poisson_ppf_fast(F, mu):
     vals = np.ceil(pdtrik_fn(q, mu))
     vals1 = np.maximum(vals - 1, 0)
     temp = pdtr_fn(vals1, mu)
-    return np.where(temp >= q, vals1, vals)
+    
+    retval = vals
+    if temp >= q:
+        retval = vals1
+    return retval
 
 
 
