@@ -107,4 +107,21 @@ def exponential_ppf_fast(F,mu):
     """ Define a fast version of the exponential percentile function. """
     return -np.log(1 - F/100)/mu
 
+addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "gammaln")
+functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double)
+gammaln_fn = functype(addr)
+addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "__pyx_fuse_1xlogy")
+functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
+xlogy_fn = functype(addr)
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64)])
+def log_gamma_pdf_fast(x, a, b):
+    return xlogy_fn(a-1.0, x*b) - x*b - gammaln_fn(a) + np.log(b)
 
+
+addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "gammaincinv")
+functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
+gammaincinv_fn = functype(addr)
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64)])
+def gamma_ppf_fast(F, alpha, beta):
+    """ A fast version of the gamma percentile function"""
+    return gammaincinv_fn(alpha, F/100)/beta
