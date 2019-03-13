@@ -1,9 +1,5 @@
 
-Write the following:
-    * TrendExponentialModel.py
-    * TrendGammaModel.py
-    * TrendGEVModel.py
-
-Also, implement a get_slopes() method in all.
+* Implement a get_mean_trend() method for all.
+* Implement an output-all-diagnostics-plot function that can output into a directory
 
 

@@ -117,7 +117,6 @@ xlogy_fn = functype(addr)
 def log_gamma_pdf_fast(x, a, b):
     return xlogy_fn(a-1.0, x*b) - x*b - gammaln_fn(a) + np.log(b)
 
-
 addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "gammaincinv")
 functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 gammaincinv_fn = functype(addr)
@@ -125,3 +124,25 @@ gammaincinv_fn = functype(addr)
 def gamma_ppf_fast(F, alpha, beta):
     """ A fast version of the gamma percentile function"""
     return gammaincinv_fn(alpha, F/100)/beta
+
+
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
+def log_gev_pdf_fast(x, mu, sigma, xi):
+    """ A fast version of the log of the GEV distribution. """
+    if xi == 0:
+        t = np.exp(-(x-mu)/sigma)
+    else:
+        t = (1 + xi*(x-mu)/sigma)**(-1/xi)
+        
+    return  xlogy_fn(xi + 1, t) - np.log(sigma) - t
+
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
+def gev_ppf_fast(F, mu, sigma, xi):
+    """ A fast version of the GEV percentile function. """
+    
+    if xi == 0:
+        coef = -np.log(-np.log(F/100))
+    else:
+        coef = ((-np.log(F/100))**(-xi) - 1)/xi
+        
+    return mu + sigma*coef
