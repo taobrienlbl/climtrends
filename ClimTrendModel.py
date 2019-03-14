@@ -8,7 +8,7 @@ import numpy as np
 import emcee as emcee
 import fastkde.fastKDE as fastKDE
 import fastkde.plot
-from utility_functions import get_statistics_label
+from .utility_functions import get_statistics_label
 
 # fix a plotting issue with netCDF4
 mpl.units.registry[cftime.real_datetime] = mpl.units.registry[dt.datetime]
@@ -868,11 +868,11 @@ class ClimTrendModel:
         
         # calculate the trends and normalize by the stddev of the stddev
         dstddev       = np.diff(stddev_endpoints, axis = 1).squeeze() # change in stddev
-        dt          = np.diff(times) # spread in time
-        stddevstddev    = np.stddev(self.calculate_stddev_values(self.dates), axis = 1) # stddev of the stddev (averaged over time)
+        dt            = np.diff(times) # spread in time
+        meanstddev    = np.mean(self.calculate_stddev_values(self.dates), axis = 1) # mean of the stddev (averaged over time)
         
         if normalize:
-            stddev_trends = dstddev / dt / stddevstddev
+            stddev_trends = dstddev / dt / meanstddev
         else:
             stddev_trends = dstddev / dt
         

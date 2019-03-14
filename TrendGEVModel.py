@@ -4,8 +4,8 @@ import warnings
 import numpy as np
 import numba
 import scipy.stats
-from ClimTrendModel import ClimTrendModel
-from utility_functions import log_gev_pdf_fast, gev_ppf_fast
+from .ClimTrendModel import ClimTrendModel
+from .utility_functions import log_gev_pdf_fast, gev_ppf_fast
        
 class TrendGEVModel(ClimTrendModel):
     """ A GEV distribution with trend in the location parameter

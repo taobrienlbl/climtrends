@@ -2,8 +2,8 @@
 import numpy as np
 import scipy.stats
 import numba
-from ClimTrendModel import ClimTrendModel
-from utility_functions import log_normal_fast, normal_ppf_fast
+from .ClimTrendModel import ClimTrendModel
+from .utility_functions import log_normal_fast, normal_ppf_fast
 
 class NoTrendNormalModel(ClimTrendModel):
     """ A simple normal distribution with no trend.

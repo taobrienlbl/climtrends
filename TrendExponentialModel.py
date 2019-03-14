@@ -3,8 +3,8 @@
 import numpy as np
 import numba
 import scipy.stats
-from ClimTrendModel import ClimTrendModel
-from utility_functions import log_exponential_pdf_fast, exponential_ppf_fast
+from .ClimTrendModel import ClimTrendModel
+from .utility_functions import log_exponential_pdf_fast, exponential_ppf_fast
        
 class TrendExponentialModel(ClimTrendModel):
     """ An exponential distribution with trend in mean
