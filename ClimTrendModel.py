@@ -341,6 +341,26 @@ class ClimTrendModel:
         """
         
         raise NotImplementedError("The subclass needs to implement calculate_mean_values().")
+        
+    def calculate_stddev_values(self,
+                              dates):
+        """ Calculates the standard deviations of the distribution for all parameter samples at the given dates.
+        
+            input:
+            ------
+            
+                dates      : the input abscissa (time) values.  These should be datetime-like objects. 
+                
+            output:
+            -------
+            
+                std_values : a numpy array of shape [num_samples, len(dates)] containing the standard deviation values
+                              for each MCMC sample at each date
+        
+        
+        """
+        
+        raise NotImplementedError("The subclass needs to implement calculate_std_values().")
     
     def get_percentile_of_mean_at_time(self,
                                dates,
@@ -810,3 +830,36 @@ class ClimTrendModel:
         return mean_trends
         
     
+    def get_stddev_trend_samples(self):
+        """ Return samples of the trend in the distribution's stddev.
+        
+            input:
+            ------
+            
+            
+            output:
+            -------
+            
+                trend_samples - MCMC samples from the posterior distribution of trends in the log of the stddev 
+                
+                The units of the return value are in frac/yr
+        
+        """
+        
+        # get the earliest and latest dates
+        d0 = min(self.dates)
+        d1 = max(self.dates)
+        
+        times = self.dates_to_xvalues([d0,d1])
+        
+        # calculate the stddev at the endpoints
+        stddev_endpoints = self.calculate_stddev_values([d0,d1])
+        
+        # calculate the trends and normalize by the stddev of the stddev
+        dstddev       = np.diff(stddev_endpoints, axis = 1).squeeze() # change in stddev
+        dt          = np.diff(times) # spread in time
+        stddevstddev    = np.stddev(self.calculate_stddev_values(self.dates), axis = 1) # stddev of the stddev (averaged over time)
+        stddev_trends = dstddev / dt / stddevstddev
+        
+        return stddev_trends
+ 

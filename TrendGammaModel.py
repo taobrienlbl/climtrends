@@ -62,6 +62,31 @@ class TrendGammaModel(ClimTrendModel):
             
         return mean_values
     
+    def calculate_stddev_values(self, dates):
+        
+        # get the MCMC samples
+        parameter_samples = self.get_mcmc_samples()
+        
+        # convert the input dates to times
+        times = self.dates_to_xvalues(dates)
+        
+        # check that the MCMC sampler has been run
+        if self.sampler is not None:
+            
+            # calculate the rate and shape parameters
+            alpha = parameter_samples[0,:][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1,:][:,np.newaxis]
+            beta = parameter_samples[2,:][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[3,:][:,np.newaxis]
+            # get the stddev value
+            stddev_values = np.sqrt(alpha)/beta
+            
+            # exponentiate the value if we are using an exponential trend model
+            if self.use_exponential_model:
+                stddev_values = np.exp(stddev_values)
+        else:
+            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling calculate_stddev_values()'")
+            
+        return stddev_values
+    
     def get_percentile_of_percentile_at_time(self,
                                              dates,
                                              percentile,
