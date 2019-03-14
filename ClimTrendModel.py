@@ -8,7 +8,7 @@ import numpy as np
 import emcee as emcee
 import fastkde.fastKDE as fastKDE
 import fastkde.plot
-from utility_functions import get_statistics_label
+from .utility_functions import get_statistics_label
 
 # fix a plotting issue with netCDF4
 mpl.units.registry[cftime.real_datetime] = mpl.units.registry[dt.datetime]

@@ -3,8 +3,8 @@
 import numpy as np
 import numba
 import scipy.stats
-from ClimTrendModel import ClimTrendModel
-from utility_functions import log_gamma_pdf_fast, gamma_ppf_fast
+from .ClimTrendModel import ClimTrendModel
+from .utility_functions import log_gamma_pdf_fast, gamma_ppf_fast
        
 class TrendGammaModel(ClimTrendModel):
     """ A gamma distribution with trend in the shape and rate parameters

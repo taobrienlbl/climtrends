@@ -3,8 +3,8 @@
 import numpy as np
 import numba
 import scipy.stats
-from ClimTrendModel import ClimTrendModel
-from utility_functions import log_poisson_pdf_fast, poisson_ppf_fast
+from .ClimTrendModel import ClimTrendModel
+from .utility_functions import log_poisson_pdf_fast, poisson_ppf_fast
        
 class TrendPoissonModel(ClimTrendModel):
     """ A poisson distribution with trend in mean
