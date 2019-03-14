@@ -146,3 +146,46 @@ def gev_ppf_fast(F, mu, sigma, xi):
         coef = ((-np.log(F/100))**(-xi) - 1)/xi
         
     return mu + sigma*coef
+
+def to_label(tm,tl,tu):
+    return "{:+0.0f}".format(tm) + "$^{" + "{:+0.0f}".format(tu) +"}_{" + "{:+0.0f}".format(tl) + "}$" +  r" %/ha"
+
+
+def get_statistics_label(var):
+    """ Calculates the mean, 5th, and 95th percentiles of a variable and calculates the probability that the variable is either positive or negative (depending on the sign of the mean)
+    
+        input:
+        ------
+        
+            var  : samples of the variable
+            
+        output:
+        -------
+        
+            stats_string, prob : a string giving the statistics
+                                 and the probability that the
+                                 trend doesn't have the opposite sign
+    
+    
+    """
+
+    # convert to percent per century
+    to_pct_per_century = 10000
+    var *= to_pct_per_century
+    
+    # calculate the statistics
+    var_mean = var.mean()
+    var_low = np.percentile(var,5)
+    var_high = np.percentile(var,95)
+    
+    # calculate the probability that the variable is less or equal to 0
+    var_sign_probability = scipy.stats.percentileofscore(var,0,kind='weak')
+    
+    # if the mean value is positive, invert the probability
+    if var_mean > 0:
+        var_sign_probability = 100 - var_sign_probability
+        
+    trend_label = to_label(var_mean,var_low,var_high)
+    significance_label = "  , P = {:0.0f}%".format(var_sign_probability)
+    
+    return trend_label, int(np.around(var_sign_probability))

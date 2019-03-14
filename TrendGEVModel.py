@@ -37,7 +37,7 @@ class TrendGEVModel(ClimTrendModel):
         
         return np.sum(log_gev_pdf_fast(self.y, mu, sigma, xi))
     
-    def get_percentile_of_mean_at_time(self, dates, percentile):
+    def calculate_mean_values(self, dates):
         
         warnings.warn("This function actually returns the median instead of the mean, since the mean is not always defined for the GEV distribution.")
         
@@ -51,26 +51,22 @@ class TrendGEVModel(ClimTrendModel):
         if self.sampler is not None:
             
             # calculate the location, rate,  and shape parameters
-            mu = parameter_samples[0][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1][:,np.newaxis]
+            mu = parameter_samples[0,:][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1,:][:,np.newaxis]
             sigma = parameter_samples[2,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)])
             xi = parameter_samples[3,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)])
              
             # calculate the median instead of the mean, since the mean may be undefined
             coef = np.where(xi != 0, (np.log(2)**(-xi) - 1)/xi, -np.log(np.log(2)))
             
-            median = mu + sigma*coef
-            
-            
-            # get the percentile of that value
-            values = np.percentile(median, percentile, axis = 0)
+            median_values = mu + sigma*coef
             
             # exponentiate the value if we are using an exponential trend model
             if self.use_exponential_model:
-                values = np.exp(values)
+                median_values = np.exp(median_values)
         else:
-            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling get_percentile_of_mean_at_time()'")
+            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling calculate_mean_values()'")
             
-        return values
+        return median_values
     
     def get_percentile_of_percentile_at_time(self,
                                              dates,

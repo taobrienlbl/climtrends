@@ -5,9 +5,10 @@ import datetime as dt
 import cftime
 import scipy.stats
 import numpy as np
-import emcee_nompi as emcee
+import emcee as emcee
 import fastkde.fastKDE as fastKDE
 import fastkde.plot
+from utility_functions import get_statistics_label
 
 # fix a plotting issue with netCDF4
 mpl.units.registry[cftime.real_datetime] = mpl.units.registry[dt.datetime]
@@ -321,6 +322,26 @@ class ClimTrendModel:
         
         return emcee_trace
     
+    def calculate_mean_values(self,
+                              dates):
+        """ Calculates the mean values of the distribution for all parameter samples at the given dates.
+        
+            input:
+            ------
+            
+                dates      : the input abscissa (time) values.  These should be datetime-like objects. 
+                
+            output:
+            -------
+            
+                mean_values : a numpy array of shape [num_samples, len(dates)] containing the mean values
+                              for each MCMC sample at each date
+        
+        
+        """
+        
+        raise NotImplementedError("The subclass needs to implement calculate_mean_values().")
+    
     def get_percentile_of_mean_at_time(self,
                                dates,
                                percentile):
@@ -342,7 +363,13 @@ class ClimTrendModel:
         
         """
         
-        raise NotImplementedError("The subclass needs to implement get_percentile_of_mean_at_time().")
+        # get the mean
+        mean = self.calculate_mean_values(dates)
+        
+        # get the percentile of that value
+        values = np.percentile(mean, percentile, axis = 0)
+        
+        return values
         
     def get_percentile_of_percentile_at_time(self,
                                dates,
@@ -489,6 +516,14 @@ class ClimTrendModel:
             ax.plot(line_dates, model_pval_50, '--', color = 'C0')
             ax.fill_between(line_dates, model_pval_5, model_pval_95, alpha = 0.5, color = 'C0')
             
+        # get the samples of the mean trends
+        mean_trends = self.get_mean_trend_samples()
+        stats_label, prob = get_statistics_label(mean_trends)
+        
+        # set the title
+        title = "Trend in mean: {}, P = {}%".format(stats_label, prob)
+        ax.set_title(title)
+
             
         if output_file is not None:
             PP.savefig(output_file)
@@ -741,3 +776,37 @@ class ClimTrendModel:
         # plot the N-N plot
         self.plot_nnplot()
             
+    def get_mean_trend_samples(self):
+        """ Return samples of the trend in the distribution's mean.
+        
+            input:
+            ------
+            
+            
+            output:
+            -------
+            
+                trend_samples - MCMC samples from the posterior distribution of trends in the log of the mean 
+                
+                The units of the return value are in frac/yr
+        
+        """
+        
+        # get the earliest and latest dates
+        d0 = min(self.dates)
+        d1 = max(self.dates)
+        
+        times = self.dates_to_xvalues([d0,d1])
+        
+        # calculate the mean at the endpoints
+        mean_endpoints = self.calculate_mean_values([d0,d1])
+        
+        # calculate the trends and normalize by the mean of the mean
+        dmean       = np.diff(mean_endpoints, axis = 1).squeeze() # change in mean
+        dt          = np.diff(times) # spread in time
+        meanmean    = np.mean(self.calculate_mean_values(self.dates), axis = 1) # mean of the mean (averaged over time)
+        mean_trends = dmean / dt / meanmean
+        
+        return mean_trends
+        
+    

@@ -37,7 +37,7 @@ class TrendGammaModel(ClimTrendModel):
         
         return np.sum(log_gamma_pdf_fast(self.y, alpha, beta))
     
-    def get_percentile_of_mean_at_time(self, dates, percentile):
+    def calculate_mean_values(self, dates):
         
         # get the MCMC samples
         parameter_samples = self.get_mcmc_samples()
@@ -49,21 +49,18 @@ class TrendGammaModel(ClimTrendModel):
         if self.sampler is not None:
             
             # calculate the rate and shape parameters
-            alpha = parameter_samples[0][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1][:,np.newaxis]
-            beta = parameter_samples[2][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[3][:,np.newaxis]
+            alpha = parameter_samples[0,:][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1,:][:,np.newaxis]
+            beta = parameter_samples[2,:][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[3,:][:,np.newaxis]
             # get the mean value
-            mean = alpha/beta
-            
-            # get the percentile of that value
-            values = np.percentile(mean, percentile, axis = 0)
+            mean_values = alpha/beta
             
             # exponentiate the value if we are using an exponential trend model
             if self.use_exponential_model:
-                values = np.exp(values)
+                mean_values = np.exp(mean_values)
         else:
-            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling get_percentile_of_mean_at_time()'")
+            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling calculate_mean_values()'")
             
-        return values
+        return mean_values
     
     def get_percentile_of_percentile_at_time(self,
                                              dates,
