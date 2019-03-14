@@ -796,11 +796,15 @@ class ClimTrendModel:
         # plot the N-N plot
         self.plot_nnplot()
             
-    def get_mean_trend_samples(self):
+    def get_mean_trend_samples(self,
+                               normalize = True):
         """ Return samples of the trend in the distribution's mean.
         
             input:
             ------
+            
+                normalize    : Flag whether to normalize the trends
+                               (i.e., whether to calculate relative trends)
             
             
             output:
@@ -825,17 +829,24 @@ class ClimTrendModel:
         dmean       = np.diff(mean_endpoints, axis = 1).squeeze() # change in mean
         dt          = np.diff(times) # spread in time
         meanmean    = np.mean(self.calculate_mean_values(self.dates), axis = 1) # mean of the mean (averaged over time)
-        mean_trends = dmean / dt / meanmean
+        
+        if normalize:
+            mean_trends = dmean / dt / meanmean
+        else:
+            mean_trends = dmean / dt
         
         return mean_trends
         
     
-    def get_stddev_trend_samples(self):
+    def get_stddev_trend_samples(self,
+                                 normalize = True):
         """ Return samples of the trend in the distribution's stddev.
         
             input:
             ------
             
+                normalize    : Flag whether to normalize the trends
+                               (i.e., whether to calculate relative trends)
             
             output:
             -------
@@ -859,7 +870,11 @@ class ClimTrendModel:
         dstddev       = np.diff(stddev_endpoints, axis = 1).squeeze() # change in stddev
         dt          = np.diff(times) # spread in time
         stddevstddev    = np.stddev(self.calculate_stddev_values(self.dates), axis = 1) # stddev of the stddev (averaged over time)
-        stddev_trends = dstddev / dt / stddevstddev
+        
+        if normalize:
+            stddev_trends = dstddev / dt / stddevstddev
+        else:
+            stddev_trends = dstddev / dt
         
         return stddev_trends
  
