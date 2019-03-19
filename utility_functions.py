@@ -64,7 +64,7 @@ def normal_ppf_fast(F, mu, var):
 @numba.vectorize([numba.int64(numba.int64)],)
 def fast_factorial(n):
     if n == 0:
-        return 0
+        return 1
     
     retval = 1
     for n in range(2, n+1):
@@ -74,7 +74,10 @@ def fast_factorial(n):
 @numba.vectorize([numba.float64(numba.int64, numba.float64)])
 def log_poisson_pdf_fast(N,mu):
     """ Define a fast version of the log poisson. """
-    return -mu + N*np.log(mu) -np.log(fast_factorial(N))
+    if mu <= 0:
+        return -np.inf
+    else:
+        return -mu + N*np.log(mu) -np.log(fast_factorial(N))
 
 
 # A helper function for quickly calculating the PPF of a poisson distribution
