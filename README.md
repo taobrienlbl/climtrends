@@ -8,7 +8,7 @@ includes:
   * Poisson Distribution - trend in mean
   * Exponential Distribution - trend in mean
   * Gamma Distribution - trend in mean and standard deviation
-  * GEV Distribution - trend in mean and standard deviation
+  * GEV Distribution - trend in mean
 
 The module utilizes `datetime`-like objects as the input time value, which
 makes it easy to interoperate with data from
