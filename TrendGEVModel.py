@@ -1,6 +1,5 @@
 """ A module for Bayesian parameter estimation of a GEV distribution with trend in the location parameter. """
 
-import warnings
 import numpy as np
 import numba
 import scipy.stats
@@ -38,8 +37,6 @@ class TrendGEVModel(ClimTrendModel):
         return np.sum(log_gev_pdf_fast(self.y, mu, sigma, xi))
     
     def calculate_mean_values(self, dates):
-        
-        warnings.warn("This function actually returns the median instead of the mean, since the mean is not always defined for the GEV distribution.")
         
         # get the MCMC samples
         parameter_samples = self.get_mcmc_samples()
