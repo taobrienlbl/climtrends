@@ -8,6 +8,11 @@ import numpy as np
 import emcee as emcee
 import fastkde.fastKDE as fastKDE
 import fastkde.plot
+try:
+    import schwimmbad
+    has_schwimmbad = True
+except:
+    has_schwimmbad = False
 from .utility_functions import get_statistics_label
 
 # fix a plotting issue with netCDF4
@@ -24,6 +29,8 @@ class ClimTrendModel:
                  use_exponential_model = False,
                  num_walkers = 50,
                  num_burn = 1000,
+                 use_thread_pool = False,
+                 use_mpi_pool = False,
                 ):
         """ 
         
@@ -44,6 +51,15 @@ class ClimTrendModel:
                 num_walkers           : the number of walkers to use in the MCMC calculation
                 
                 num_burn              : the number of samples to use for burn-in
+                
+                use_thread_pool       : uses multiprocessing to parallelize the ensemble calculation
+                                        this is mutually exclusive with `use_mpi_pool`, which takes
+                                        precedence
+        
+                use_mpi_pool          : uses MPI to parallelize the ensemble calculation
+                                        this is mutually exclusive with `use_thread_pool`; this takes
+                                        precedence
+        
         
         
         """
@@ -55,6 +71,12 @@ class ClimTrendModel:
         self.num_walkers = num_walkers
         self.num_burn = num_burn
         self.test_only = test_only
+        self.use_thread_pool = use_thread_pool
+        self.use_mpi_pool = use_mpi_pool
+        if use_mpi_pool:
+            self.use_thread_pool = False
+        
+        
         
         # store time values
         self.dates = dates
@@ -279,13 +301,17 @@ class ClimTrendModel:
         return log_prior + log_likelihood
     
     def run_mcmc_sampler(self,
-                         num_samples = 1000):
+                         num_samples = 1000,
+                         pool = None):
         """ Runs the emcee sampler
         
             input:
             ------
             
                 num_samples : the number of samples to obtain. This is in addition to self.num_burn
+                
+                pool : a pool-like object (with a map method) for parallelizing the MCMC calculation
+
                 
             output:
             -------
@@ -299,10 +325,29 @@ class ClimTrendModel:
         
         # set theta randomly
         starting_parameters = self.get_starting_parameters()
+        
+        # deal with the mulitprocessing pool
+        need_close_pool = False
+        if has_schwimmbad:
+            if pool is None:
+                if self.use_mpi_pool:
+                    pool = schwimmbad.MPIPool()
+                    need_close_pool = True
+
+                    if not pool.is_master():
+                        pool.wait()
+                        sys.exit(0)
+                elif self.use_thread_pool and not self.use_mpi_pool:
+                    pool = schwimmbad.MultiPool()
+                    need_close_pool = True
 
         # initialize the MCMC model and do the sampling
-        self.sampler = emcee.EnsembleSampler(self.num_walkers, self.num_parameters, self.log_posterior)
+        self.sampler = emcee.EnsembleSampler(self.num_walkers, self.num_parameters, self.log_posterior, pool = pool)
         self.sampler.run_mcmc(starting_parameters, num_steps)
+        
+        # close the multiprocessing pool
+        if need_close_pool:
+            pool.close()
         
         return self
     
