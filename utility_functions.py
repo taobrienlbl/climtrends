@@ -103,6 +103,8 @@ def poisson_ppf_fast(F, mu):
 @numba.vectorize([numba.float64(numba.float64, numba.float64)])
 def log_exponential_pdf_fast(x,mu):
     """ Define a fast version of the log exponential. """
+    if mu <= 0:
+        return -np.inf
     return np.log(mu) - mu*x
 
 @numba.vectorize([numba.float64(numba.float64, numba.float64)])
@@ -118,6 +120,8 @@ functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 xlogy_fn = functype(addr)
 @numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64)])
 def log_gamma_pdf_fast(x, a, b):
+    if b <= 0:
+        return -np.inf
     return xlogy_fn(a-1.0, x*b) - x*b - gammaln_fn(a) + np.log(b)
 
 addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "gammaincinv")
@@ -135,7 +139,14 @@ def log_gev_pdf_fast(x, mu, sigma, xi):
     if xi == 0:
         t = np.exp(-(x-mu)/sigma)
     else:
-        t = (1 + xi*(x-mu)/sigma)**(-1/xi)
+        arg = (1 + xi*(x-mu)/sigma)
+        if arg < 0:
+            return -np.inf
+        
+        t = (arg)**(-1/xi)
+        
+    if sigma <= 0:
+        return -np.inf
         
     return  xlogy_fn(xi + 1, t) - np.log(sigma) - t
 
