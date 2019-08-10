@@ -120,6 +120,8 @@ functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 xlogy_fn = functype(addr)
 @numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64)])
 def log_gamma_pdf_fast(x, a, b):
+    if a <= 0:
+        return -np.inf
     if b <= 0:
         return -np.inf
     return xlogy_fn(a-1.0, x*b) - x*b - gammaln_fn(a) + np.log(b)
