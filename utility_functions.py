@@ -61,12 +61,12 @@ def normal_ppf_fast(F, mu, var):
     
     return quantile
     
-@numba.vectorize([numba.int64(numba.int64)],)
+@numba.vectorize([numba.float64(numba.int64)],)
 def fast_factorial(n):
     if n == 0:
         return 1
     
-    retval = 1
+    retval = 1.0
     for n in range(2, n+1):
         retval *= n
         
@@ -187,7 +187,7 @@ def get_statistics_label(var):
 
     # convert to percent per century
     to_pct_per_century = 10000
-    var *= to_pct_per_century
+    var = np.array(var, copy = True)*to_pct_per_century
     
     # calculate the statistics
     var_mean = var.mean()
