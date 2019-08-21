@@ -387,6 +387,29 @@ class ClimTrendModel:
         
         raise NotImplementedError("The subclass needs to implement calculate_mean_values().")
         
+    def calculate_cdf_values(self,
+                             value,
+                             date):
+        """ Calculates the posterior distribution of the probability of values greater than 'value' for all parameter samples at the given dates.
+        
+            input:
+            ------
+            
+                value      : the value at which to evaluate the cumulative distribution function
+            
+                date       : the input abscissa (time) value.  This should be a datetime-like objects. 
+                
+            output:
+            -------
+            
+                cdf_values : a numpy array of shape [num_samples] containing the CDF at `value`
+                              for each MCMC sample at the given date
+        
+        
+        """
+        
+        raise NotImplementedError("The subclass needs to implement calculate_cdf_values().")
+        
     def calculate_stddev_values(self,
                               dates):
         """ Calculates the standard deviations of the distribution for all parameter samples at the given dates.
@@ -463,6 +486,51 @@ class ClimTrendModel:
         """
         
         raise NotImplementedError("The subclass needs to implement get_percentile_of_percentiel_at_time().")
+        
+        
+    def get_risk_ratios(self,
+                        value,
+                        date0,
+                        date1,
+                        ):
+        """ Returns the posterior distribution of risk ratios for a given value and two dates.
+        
+            input:
+            ------
+            
+                value     : the value for which to calculate the risk ratio
+                
+                date0     : the first date in the risk ratio calculation
+                            (the date corresponding to the numerator probability)
+        
+                date1     : the second date in the risk ratio calculation
+                            (the date corresponding to the denominator probability)
+        
+            output:
+            -------
+            
+                RR_array  : an array of posterior values of the risk ratio.
+                
+                
+            The risk ratio is calculated as the ratio of probabilities:
+            
+               RR = P( x >= value | date0) / P( x >= value | date1)
+                
+                
+        """
+        
+        # calculate the probability of values greater than 'value'
+        # for both dates
+        sf0_array = 1 - self.calculate_cdf_values(value, date0)
+        sf1_array = 1 - self.calculate_cdf_values(value, date1)
+        sf1_array = np.ma.masked_where(np.isclose(sf1_array, 0), sf1_array)
+        
+        # calculate the risk ratio
+        RR_array = np.ma.filled(sf0_array / sf1_array, np.inf)
+        
+        return RR_array
+        
+        
         
     def plot_mcmc_trace(self,
                         output_file = None,
@@ -840,6 +908,30 @@ class ClimTrendModel:
         
         # plot the N-N plot
         self.plot_nnplot()
+        
+        # calculate the distribution of risk ratios for the beginning and end of the dataset
+        # estimate the 95th percentile value across the dataset
+        val_95 = np.percentile(self.y, 95)
+        risk_ratios = self.get_risk_ratios(val_95, max(self.dates), min(self.dates))
+        
+        if not all(risk_ratios == risk_ratios[0]):
+            
+            rr_sorted = np.sort(risk_ratios)
+            cdf = np.cumsum(np.ones(len(rr_sorted))) / len(rr_sorted)
+            
+            # plot the risk ratios
+            fig, ax = PP.subplots()
+            ax.plot(rr_sorted, cdf)
+            ax.set_xlabel("Risk Ratio")
+            ax.set_ylabel("CDF")
+            ax.set_xscale("log")
+            #ylim = ax.get_ylim()
+            #ax.plot([1,1], ylim, 'k--')
+            #ax.set_ylim(ylim)
+            ax.set_title("Risk Ratio of value = {}".format(val_95))
+            PP.show()
+            
+        return self
             
     def get_mean_trend_samples(self,
                                normalize = True):

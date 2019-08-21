@@ -3,7 +3,7 @@ import numpy as np
 import scipy.stats
 import numba
 from .ClimTrendModel import ClimTrendModel
-from .utility_functions import log_normal_fast, normal_ppf_fast
+from .utility_functions import log_normal_fast, normal_ppf_fast, normal_cdf_fast
 
 class NoTrendNormalModel(ClimTrendModel):
     """ A simple normal distribution with no trend.
@@ -110,3 +110,43 @@ class NoTrendNormalModel(ClimTrendModel):
         
     
  
+    def calculate_cdf_values(self,
+                             value,
+                             date):
+        """ Calculates the posterior distribution of the probability of values greater than 'value' for all parameter samples at the given dates.
+        
+            input:
+            ------
+            
+                value      : the value at which to evaluate the cumulative distribution function
+            
+                date       : the input abscissa (time) value.  This should be a datetime-like objects. 
+                
+            output:
+            -------
+            
+                cdf_values : a numpy array of shape [num_samples] containing the CDF at `value`
+                              for each MCMC sample at the given date
+        
+        
+        """
+        
+        # exponentiate the value if we are using an exponential trend model
+        if self.use_exponential_model:
+            value = np.exp(value)
+            
+        # get the MCMC samples
+        parameter_samples = self.get_mcmc_samples()
+        
+        # check that the MCMC sampler has been run
+        if self.sampler is not None:
+            
+            # get the mean value
+            mu  = parameter_samples[0,:]
+            var = parameter_samples[1,:]
+            
+            cdf_values = normal_cdf_fast(value, mu, var)
+        else:
+            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling calculate_cdf_values()'")
+            
+        return cdf_values

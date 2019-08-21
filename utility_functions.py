@@ -4,6 +4,7 @@ import numpy as np
 import numba.extending
 import scipy.special
 import ctypes
+import math
 
 # make a numba-ready version of erfinv()
 # This follows https://github.com/numba/numba/issues/3086#issuecomment-403469308
@@ -60,6 +61,40 @@ def normal_ppf_fast(F, mu, var):
     quantile = mu + np.sqrt(2*var)*erfinv(float(2*F/100 - 1))
     
     return quantile
+
+# A helper function for quickly calculating the PPF of a poisson distribution
+#addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "erf")
+#functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
+#erf_fn = functype(addr)
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64)])
+def normal_cdf_fast(value, mu, var):
+    """  Returns the the CDF of 'value' for a normal distribution
+    
+        input:
+        ------
+            
+            value : the input value 
+             
+            mu    : the mean of the normal distribution
+             
+            var   : the variance of the normal distribution
+            
+        output:
+        -------
+            
+            F      : the percentile value [0-100]
+    
+    """
+    
+    if var == 0:
+        if value >= mu:
+            quantile = 1.0
+        else:
+            quantile = 0.0
+    else:
+        quantile = 0.5*(1 + math.erf( (value - mu) / (var * np.sqrt(2)) ))
+    
+    return quantile
     
 @numba.vectorize([numba.float64(numba.int64)],)
 def fast_factorial(n):
@@ -99,6 +134,18 @@ def poisson_ppf_fast(F, mu):
     if temp >= q:
         retval = vals1
     return retval
+addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "gammainc")
+functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
+gammainc_fn = functype(addr)
+@numba.vectorize([numba.float64(numba.float64, numba.float64)])
+def poisson_cdf_fast(value, mu):
+    """ A fast calculation of the CDF function of a poisson distribution. """
+    
+    k = math.floor(value)
+    cdf = 1 - gammainc_fn(k+1, mu)
+    
+    return cdf
+    
 
 @numba.vectorize([numba.float64(numba.float64, numba.float64)])
 def log_exponential_pdf_fast(x,mu):
@@ -111,6 +158,11 @@ def log_exponential_pdf_fast(x,mu):
 def exponential_ppf_fast(F,mu):
     """ Define a fast version of the exponential percentile function. """
     return -np.log(1 - F/100)/mu
+
+@numba.vectorize([numba.float64(numba.float64, numba.float64)])
+def exponential_cdf_fast(value,mu):
+    """ Define a fast version of the exponential CDF function. """
+    return 1 - np.exp(-mu*value)
 
 addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "gammaln")
 functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double)
@@ -133,6 +185,11 @@ gammaincinv_fn = functype(addr)
 def gamma_ppf_fast(F, alpha, beta):
     """ A fast version of the gamma percentile function"""
     return gammaincinv_fn(alpha, F/100)/beta
+
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64)])
+def gamma_cdf_fast(value, alpha, beta):
+    """ A fast version of the gamma CDF function"""
+    return gammainc_fn(alpha, beta*value)
 
 
 @numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
@@ -162,6 +219,26 @@ def gev_ppf_fast(F, mu, sigma, xi):
         coef = ((-np.log(F/100))**(-xi) - 1)/xi
         
     return mu + sigma*coef
+
+@numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
+def gev_cdf_fast(x, mu, sigma, xi):
+    """ A fast version of the CDF of the GEV distribution. """
+    if xi == 0:
+        t = np.exp(-(x-mu)/sigma)
+    else:
+        s = (x-mu)/sigma
+        
+        if xi > 0:
+            if s <= -1/xi:
+                return 0
+        if xi < 0:
+            if s >= -1/xi:
+                return 1.0
+        
+        arg = (1 + xi*s)
+        t = (arg)**(-1/xi)
+        
+    return np.exp(-t)
 
 def to_label(tm,tl,tu):
     return "{:+0.0f}".format(tm) + "$^{" + "{:+0.0f}".format(tu) +"}_{" + "{:+0.0f}".format(tl) + "}$" +  r" %/ha"

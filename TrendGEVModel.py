@@ -4,7 +4,7 @@ import numpy as np
 import numba
 import scipy.stats
 from .ClimTrendModel import ClimTrendModel
-from .utility_functions import log_gev_pdf_fast, gev_ppf_fast
+from .utility_functions import log_gev_pdf_fast, gev_ppf_fast, gev_cdf_fast
        
 class TrendGEVModel(ClimTrendModel):
     """ A GEV distribution with trend in the location parameter
@@ -130,5 +130,49 @@ class TrendGEVModel(ClimTrendModel):
         
         return starting_parameters
         
+    def calculate_cdf_values(self,
+                             value,
+                             date):
+        """ Calculates the posterior distribution of the probability of values greater than 'value' for all parameter samples at the given dates.
         
+            input:
+            ------
+            
+                value      : the value at which to evaluate the cumulative distribution function
+            
+                date       : the input abscissa (time) value.  This should be a datetime-like objects. 
+                
+            output:
+            -------
+            
+                cdf_values : a numpy array of shape [num_samples] containing the CDF at `value`
+                              for each MCMC sample at the given date
+        
+        
+        """
+        
+        # exponentiate the value if we are using an exponential trend model
+        if self.use_exponential_model:
+            value = np.exp(value)
+            
+        # get the MCMC samples
+        parameter_samples = self.get_mcmc_samples()
+        
+        # convert the input date to time
+        time = self.dates_to_xvalues(date)
+        
+        # check that the MCMC sampler has been run
+        if self.sampler is not None:
+            
+            # calculate the location, rate,  and shape parameters
+            mu = parameter_samples[0,:]*time + parameter_samples[1,:]
+            sigma = parameter_samples[2,:]
+            xi = parameter_samples[3,:]
+            
+            cdf_values = gev_cdf_fast(value, mu, sigma, xi)
+        else:
+            raise RuntimeError("the `run_mcmc_sampler()' method must be called prior to calling calculate_cdf_values()'")
+            
+        return cdf_values
+               
  
