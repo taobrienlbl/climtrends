@@ -119,7 +119,7 @@ def log_poisson_pdf_fast(N,mu):
 addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "pdtrik")
 functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 pdtrik_fn = functype(addr)
-addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "__pyx_fuse_0pdtr")
+addr = numba.extending.get_cython_function_address("scipy.special.cython_special", "pdtr")
 functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
 pdtr_fn = functype(addr)
 @numba.vectorize([numba.float64(numba.float64, numba.float64)])
