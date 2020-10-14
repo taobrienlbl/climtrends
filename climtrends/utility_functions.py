@@ -195,19 +195,26 @@ def gamma_cdf_fast(value, alpha, beta):
 @numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
 def log_gev_pdf_fast(x, mu, sigma, xi):
     """ A fast version of the log of the GEV distribution. """
+    z = (x - mu) / sigma
     if xi == 0:
-        t = np.exp(-(x-mu)/sigma)
+        t = np.exp(-z)
     else:
-        arg = (1 + xi*(x-mu)/sigma)
-        if arg < 0:
-            return -np.inf
+        # check if the argument is within the support of the PDF
+        if xi > 0:
+            if z > 1/xi:
+                return -np.inf
+        else:
+            if z < 1/xi:
+                return -np.inf
+       
+        arg = (1 - xi * z)
         
-        t = (arg)**(-1/xi)
+        t = (arg)**(1/xi)
         
     if sigma <= 0:
         return -np.inf
         
-    return  xlogy_fn(xi + 1, t) - np.log(sigma) - t
+    return  xlogy_fn(1 - xi, t) - np.log(sigma) - t
 
 @numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
 def gev_ppf_fast(F, mu, sigma, xi):
@@ -216,7 +223,7 @@ def gev_ppf_fast(F, mu, sigma, xi):
     if xi == 0:
         coef = -np.log(-np.log(F/100))
     else:
-        coef = ((-np.log(F/100))**(-xi) - 1)/xi
+        coef = -((-np.log(F/100))**(xi) - 1)/xi
         
     return mu + sigma*coef
 

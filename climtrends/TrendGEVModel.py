@@ -8,10 +8,12 @@ from .utility_functions import log_gev_pdf_fast, gev_ppf_fast, gev_cdf_fast
        
 class TrendGEVModel(ClimTrendModel):
     """ A GEV distribution with trend in the location parameter
+
+        Note: this uses log(sigma) to assure that sigma retains a positive value
     
         Parameters:
         
-            theta = ( mu_slope, mu_intercept, sigma, xi )
+            theta = ( mu_slope, mu_intercept, log_sigma, xi )
     
     """
     
@@ -23,16 +25,18 @@ class TrendGEVModel(ClimTrendModel):
         self.num_parameters = 4
         self.parameter_is_slope = [True, False, False, False]
         self.parameter_is_intercept = [False, True, False, False ]
-        self.parameter_is_positive_definite = [ False, False, True, False ]
-        self.parameter_labels = (r"$c_{\mu}$", r"$\mu_0$", r"$\sigma$", r"$\xi$")
+        self.parameter_is_positive_definite = [ False, False, False, False ]
+        self.parameter_labels = (r"$c_{\mu}$", r"$\mu_0$", r"$log \sigma$", r"$\xi$")
         self.sanity_check()
         
     
     def log_likelihood(self, theta):
         
-        cmu, mu0, sigma, xi = theta
+        cmu, mu0, log_sigma, xi = theta
         
         mu = cmu*self.x + mu0
+
+        sigma = np.exp(log_sigma)
         
         return np.sum(log_gev_pdf_fast(self.y, mu, sigma, xi))
     
@@ -49,7 +53,7 @@ class TrendGEVModel(ClimTrendModel):
             
             # calculate the location, rate,  and shape parameters
             mu = parameter_samples[0,:][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1,:][:,np.newaxis]
-            sigma = parameter_samples[2,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)])
+            sigma = np.exp(parameter_samples[2,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)]))
             xi = parameter_samples[3,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)])
              
             # calculate the median instead of the mean, since the mean may be undefined
@@ -86,7 +90,7 @@ class TrendGEVModel(ClimTrendModel):
             
             # calculate the location, rate,  and shape parameters
             mu = parameter_samples[0][:,np.newaxis]*times[np.newaxis,:] + parameter_samples[1][:,np.newaxis]
-            sigma = parameter_samples[2,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)])
+            sigma = np.exp(parameter_samples[2,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)]))
             xi = parameter_samples[3,:][:,np.newaxis]*np.ones([len(parameter_samples[0,:]),len(dates)])
             
             model_values = gev_ppf_fast(model_percentile, mu, sigma, xi)
@@ -106,16 +110,19 @@ class TrendGEVModel(ClimTrendModel):
                          theta,
                          dates):
         # get the parameters
-        cmu, mu0, sigma, xi = theta
+        cmu, mu0, log_sigma, xi = theta
         
         # convert the dates to the internal years-since format
         times = self.dates_to_xvalues(dates)
         
         # vectorize the shape and rate parameters
         mu  = cmu*times + mu0
+
+        # convert to sigma
+        sigma = np.exp(log_sigma)
         
         # generate the samples
-        samples = np.reshape(np.array( [ scipy.stats.genextreme.rvs(c = -xi, loc = m, scale = sigma) for m in mu ] ), 
+        samples = np.reshape(np.array( [ scipy.stats.genextreme.rvs(c = xi, loc = m, scale = sigma) for m in mu ] ), 
                              np.shape(dates))
         
         return samples
@@ -125,8 +132,9 @@ class TrendGEVModel(ClimTrendModel):
         # do a first pass at the starting parameters
         starting_parameters = super().get_starting_parameters()
         
-        # initialize xi specially
-        starting_parameters[:,-1] = np.random.uniform(low=0, high = 1, size = self.num_walkers)
+        # initialize xi and sigma specially
+        starting_parameters[:,-1] = np.random.uniform(low=-0.3, high = 0.3, size = self.num_walkers)
+        starting_parameters[:,-2] = np.random.uniform(low=-2, high = 2, size = self.num_walkers)
         
         return starting_parameters
         
@@ -166,7 +174,7 @@ class TrendGEVModel(ClimTrendModel):
             
             # calculate the location, rate,  and shape parameters
             mu = parameter_samples[0,:]*time + parameter_samples[1,:]
-            sigma = parameter_samples[2,:]
+            sigma = np.exp(parameter_samples[2,:])
             xi = parameter_samples[3,:]
             
             cdf_values = gev_cdf_fast(value, mu, sigma, xi)

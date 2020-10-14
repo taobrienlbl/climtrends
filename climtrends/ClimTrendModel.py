@@ -8,6 +8,7 @@ import numpy as np
 import emcee as emcee
 import fastkde.fastKDE as fastKDE
 import fastkde.plot
+import sys
 try:
     import schwimmbad
     has_schwimmbad = True
@@ -629,7 +630,7 @@ class ClimTrendModel:
         # get a set of regularly-spaced date points for plotting
         tbnds = self.dates_to_xvalues([min(self.dates), max(self.dates)])
         line_times = np.linspace(tbnds[0], tbnds[1])*365.25
-        line_dates = cftime.num2date(line_times, self.time_units)
+        line_dates = cftime.num2pydate(line_times, self.time_units)
         
         # get the 5, 95, and 50th percentiles of the mean
         mean_50 = self.get_percentile_of_mean_at_time(line_dates, 50)
@@ -860,7 +861,7 @@ class ClimTrendModel:
             # save the time units
             self.time_units = time_units
             time_values = np.random.uniform(low = 0, high = 100*365.25, size = nvals).astype(int)
-            dates = cftime.num2date(time_values, time_units)
+            dates = cftime.num2pydate(time_values, time_units)
             # set the dates
             self.dates = dates
             self.x = self.dates_to_xvalues(self.dates)
