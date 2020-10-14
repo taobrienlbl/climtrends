@@ -46,7 +46,6 @@ slopes_95 = np.percentile(slopes, 95)
 
 # Known Issues
 
-* The install process is not finalized yet; a setup.py needs to be written.
 * The model assumes that input data are vectors; things will likely break if not.
 * Probably other issues exist.  This code is tested and is verified to work in some base cases,
   but it is still in alpha stage and has not been tested across a range of settings.
