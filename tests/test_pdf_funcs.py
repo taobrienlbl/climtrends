@@ -3,7 +3,7 @@ try:
 except:
     # if import fails, assume we are running from the test directory
     import sys
-    sys.path.insert("../")
+    sys.path.insert(0,"../")
     import climtrends.utility_functions as utility_functions
 import scipy.stats
 import numpy as np

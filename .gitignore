@@ -23,3 +23,6 @@ mark_*.pdf
 Untitled*.ipynb
 event_files.txt
 *.tex
+build/*
+*egg-info*
+dist/*

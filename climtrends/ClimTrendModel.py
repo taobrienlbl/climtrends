@@ -1,14 +1,29 @@
 """ A module and Bayesian framework for trends in statistical distributions. """
-import pylab as PP
-import matplotlib as mpl
 import datetime as dt
 import cftime
 import scipy.stats
 import numpy as np
 import emcee as emcee
-import fastkde.fastKDE as fastKDE
-import fastkde.plot
 import sys
+
+try:
+    import pylab as PP
+    import matplotlib as mpl
+
+    # fix a plotting issue with netCDF4
+    mpl.units.registry[cftime.real_datetime] = mpl.units.registry[dt.datetime]
+except:
+    import warnings
+    warnings.warn("matplotlib not installed; plotting functionality will not work")
+
+
+try:
+    import fastkde.fastKDE as fastKDE
+    import fastkde.plot
+except:
+    import warnings
+    warnings.warn("fastkde not installed; plotting functionality will not work")
+
 try:
     import schwimmbad
     has_schwimmbad = True
@@ -16,8 +31,6 @@ except:
     has_schwimmbad = False
 from .utility_functions import get_statistics_label
 
-# fix a plotting issue with netCDF4
-mpl.units.registry[cftime.real_datetime] = mpl.units.registry[dt.datetime]
 
 
 class ClimTrendModel:

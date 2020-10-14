@@ -1,0 +1,17 @@
+certifi
+cftime
+cycler
+emcee
+kiwisolver
+llvmlite
+numba
+numpy
+pandas
+Pillow
+pyparsing
+python-dateutil
+pytz
+schwimmbad
+scipy
+six
+xarray
