@@ -27,11 +27,11 @@ for examples.
 # dates - a set of input dates
 # data - corresponding data from those dates
 
-import ClimTrends
+import climtrends
 import numpy as np
 
 # initialize the MCMC model
-linear_model = ClimTrends.TrendNormalModel(dates, data)
+linear_model = climtrends.TrendNormalModel(dates, data)
 
 # run the sampler
 linear_model.run_mcmc_sampler(num_samples = 1000)
