@@ -1,7 +1,7 @@
 # ClimTrends
 
 `ClimTrends` is a python package aimed at making it easy to calculate linear
-trends in a variety of statistical modesl.  The current implementation
+trends in a variety of statistical models.  The current implementation
 includes:
 
   * Normal Distribution - trend in mean
