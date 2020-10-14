@@ -39,7 +39,7 @@ linear_model.run_mcmc_sampler(num_samples = 1000)
 # get samples of the slopes
 slopes = linear_model.get_mean_trend_samples()
 
-# get the 5th and 95th percentil slopes
+# get the 5th and 95th percentile slopes
 slopes_5 = np.percentile(slopes, 5)
 slopes_95 = np.percentile(slopes, 95)
 ```
