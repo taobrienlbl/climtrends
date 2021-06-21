@@ -230,20 +230,21 @@ def gev_ppf_fast(F, mu, sigma, xi):
 @numba.vectorize([numba.float64(numba.float64, numba.float64, numba.float64, numba.float64)])
 def gev_cdf_fast(x, mu, sigma, xi):
     """ A fast version of the CDF of the GEV distribution. """
+    z = (x-mu)/sigma
+    
     if xi == 0:
-        t = np.exp(-(x-mu)/sigma)
+        t = np.exp(-z)
     else:
-        s = (x-mu)/sigma
         
         if xi > 0:
-            if s <= -1/xi:
-                return 0
-        if xi < 0:
-            if s >= -1/xi:
+            if z >= 1/xi:
                 return 1.0
+        if xi < 0:
+            if z <= 1/xi:
+                return 0.0
         
-        arg = (1 + xi*s)
-        t = (arg)**(-1/xi)
+        arg = (1 - xi*z)
+        t = (arg)**(1/xi)
         
     return np.exp(-t)
 
